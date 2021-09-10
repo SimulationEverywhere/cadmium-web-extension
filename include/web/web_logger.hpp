@@ -209,38 +209,29 @@ namespace cadmium {
 			}
 		};
 
-		template<typename... LS>
-		using multilogger = cadmium::logger::multilogger<LS...>;
-
-		using logger_state = cadmium::logger::logger_state;
-		using logger_messages = cadmium::logger::logger_messages;
-		using logger_global_time = cadmium::logger::logger_global_time;
-
-
-
-
-		// NOTE: SLIGHT DIFFERENCE HERE, THERE'S A SECOND PARAMETER TO THE CALL TO MAKE AN COUPLED/TOP MODEL. THAT PARAMETER IS A STRING IDENTIFYING THE MODEL TYPE.
-		// NOTE: LOGGERS, SAME AS USUAL, DIFFERENT NAMESPACE
+		// Define default output files
 	    static std::ofstream out_messages("../simulation_results/output_messages.txt");
-	    struct oss_sink_messages{
-	        static std::ostream& sink(){
+
+	    struct oss_sink_messages {
+	        static std::ostream& sink() {
 	            return out_messages;
 	        }
 	    };
 
 	    static std::ofstream out_state("../simulation_results/state_messages.txt");
-	    struct oss_sink_state{
-	        static std::ostream& sink(){
+
+	    struct oss_sink_state {
+	        static std::ostream& sink() {
 	            return out_state;
 	        }
 	    };
 
-	    using state=web::logger<web::logger_state, web::formatter<NDTime>, oss_sink_state>;
-	    using log_messages=web::logger<web::logger_messages, web::formatter<NDTime>, oss_sink_messages>;
-	    using global_time_mes=web::logger<web::logger_global_time, web::formatter<NDTime>, oss_sink_messages>;
-	    using global_time_sta=web::logger<web::logger_global_time, web::formatter<NDTime>, oss_sink_state>;
+	    using state = web::logger<cadmium::logger::logger_state, web::formatter<NDTime>, oss_sink_state>;
+	    using log_messages = web::logger<cadmium::logger::logger_messages, web::formatter<NDTime>, oss_sink_messages>;
+	    using global_time_mes = web::logger<cadmium::logger::logger_global_time, web::formatter<NDTime>, oss_sink_messages>;
+	    using global_time_sta = web::logger<cadmium::logger::logger_global_time, web::formatter<NDTime>, oss_sink_state>;
 
-	    using logger_top=web::multilogger<state, log_messages, global_time_mes, global_time_sta>;
+	    using logger_top = cadmium::logger::multilogger<state, log_messages, global_time_mes, global_time_sta>;
 	}
 }
 

@@ -56,17 +56,17 @@ namespace cadmium {
 
 				if (split.size() == 1) t = TIME(l);
 
-				else {
-					vector<string> split = tools::split(l, ';');
-
-					if (split.size() < 3) return;
-
+				else if (split.size() % 2 == 1) {
 					submodel* comp = s->get_component(split[0]);
-					port* port = s->get_port(split[0], split[1]);
 
-					for (int i = 2; i < split.size(); i++) {
-						msgs->add_output_message(t, comp, port, split[i]);
+					for (int i = 1; i < split.size(); i = i + 2) {
+						port* port = s->get_port(split[0], split[i]);
+						msgs->add_output_message(t, comp, port, split[i + 1]);
 					}
+				}
+
+				else {
+					throw std::runtime_error( "Badly formed output message line. Split size is incorrect." );
 				}
 			});
 		}
@@ -133,7 +133,7 @@ namespace cadmium {
 		}
 
 		template<typename TIME>
-        static structure make_structure(shared_ptr<web::coupled_web<TIME>> p_top) {
+        static structure make_structure(shared_ptr<web::coupled<TIME>> p_top) {
         	structure s("GIS-DEVS", "Cadmium");
 
     		try {
@@ -165,7 +165,7 @@ namespace cadmium {
     	}
 
 		template<typename TIME>
-        static void output_results(shared_ptr<web::coupled_web<TIME>> p_top, string path) {
+        static void output_results(shared_ptr<web::coupled<TIME>> p_top, string path) {
 		    cadmium::web::output::messages<TIME> msgs;
 
 			web::output::structure s = make_structure(p_top);

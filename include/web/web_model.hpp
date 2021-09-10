@@ -55,11 +55,9 @@ namespace cadmium {
 		using Models = cadmium::dynamic::modeling::Models;
 		using Ports = cadmium::dynamic::modeling::Ports;
 
-		// *** RUNNER REPLACEMENT *** //
-		template<typename TIME, typename LOGGER>
-		using runner = dynamic::engine::runner<TIME, LOGGER>;
+		using model = dynamic::modeling::model;
 
-		typedef dynamic::modeling::model model;
+		// typedef dynamic::modeling::model model;
 
 		// *** COMMON MODEL BASE CLASS *** //
 		class web_extension {
@@ -102,7 +100,7 @@ namespace cadmium {
 
 		// *** MODEL REPLACEMENTS *** //
 		template<template<typename T> class ATOMIC, typename TIME, typename... Args>
-		class atomic_web : public cadmium::dynamic::modeling::atomic<ATOMIC, TIME, Args...>, public web_extension {
+		class atomic : public cadmium::dynamic::modeling::atomic<ATOMIC, TIME, Args...>, public web_extension {
 
 		private:
 			string _m_class = "";
@@ -128,10 +126,10 @@ namespace cadmium {
 			using output_ports = typename cadmium::dynamic::modeling::atomic<ATOMIC, TIME, Args...>::output_ports;
 			using input_ports = typename cadmium::dynamic::modeling::atomic<ATOMIC, TIME, Args...>::input_ports;
 
-			atomic_web() :
+			atomic() :
 				cadmium::dynamic::modeling::atomic<ATOMIC, TIME, Args...>() { }
 
-			atomic_web(const string& model_id, string m_class, Args&&... args) :
+			atomic(const string& model_id, string m_class, Args&&... args) :
 				cadmium::dynamic::modeling::atomic<ATOMIC, TIME, Args...>(model_id, forward<Args>(args)...)  {
 				_m_class = m_class;
 			}
@@ -189,21 +187,21 @@ namespace cadmium {
 		};
 
 		template<typename TIME>
-		class coupled_web : public cadmium::dynamic::modeling::coupled<TIME>, public web_extension{
+		class coupled : public cadmium::dynamic::modeling::coupled<TIME>, public web_extension{
 
 		private:
 			string _m_class = "";
 
 		public:
-			coupled_web():
+			coupled():
 				cadmium::dynamic::modeling::coupled<TIME>() { };
 
-			coupled_web(string model_id, string m_class) :
+			coupled(string model_id, string m_class) :
 				cadmium::dynamic::modeling::coupled<TIME>(model_id)  {
 				_m_class = m_class;
 			}
 
-			coupled_web(string id, string m_class, Models models, Ports input_ports,  Ports output_ports, EICs eic, EOCs eoc, ICs ic):
+			coupled(string id, string m_class, Models models, Ports input_ports,  Ports output_ports, EICs eic, EOCs eoc, ICs ic):
 				cadmium::dynamic::modeling::coupled<TIME>(id, models, input_ports, output_ports, eic, eoc, ic) {
 				_m_class = m_class;
 			}
@@ -252,20 +250,20 @@ namespace cadmium {
 		};
 
 		template<typename TIME>
-		class top_web : public web::coupled_web<TIME> {
+		class top_web : public web::coupled<TIME> {
 
 		private:
 			string _class = "";
 
 		public:
 			top_web():
-				web::coupled_web<TIME>() { };
+				web::coupled<TIME>() { };
 
 			top_web(string _id, string _m_class) :
-				web::coupled_web<TIME>(_id, _m_class)  { }
+				web::coupled<TIME>(_id, _m_class)  { }
 
 			top_web(string id, string m_class, Models models, Ports input_ports,  Ports output_ports, EICs eic, EOCs eoc, ICs ic):
-				web::coupled_web<TIME>(id, m_class, models, input_ports, output_ports, eic, eoc, ic) { }
+				web::coupled<TIME>(id, m_class, models, input_ports, output_ports, eic, eoc, ic) { }
 
 			virtual string get_type() {
 				return "top";
@@ -274,17 +272,17 @@ namespace cadmium {
 
 		// *** Make function replacements *** //
 		template<template <typename T> typename ATOMIC, typename TIME, typename... Args >
-		shared_ptr<cadmium::web::atomic_web<ATOMIC, TIME, Args...>> make_web_atomic_model(const string& model_id, string m_class, Args&&... args) {
-			return make_shared<cadmium::web::atomic_web<ATOMIC, TIME, Args...>>(model_id, m_class, forward<Args>(args)...);
+		shared_ptr<cadmium::web::atomic<ATOMIC, TIME, Args...>> make_atomic_model(const string& model_id, string m_class, Args&&... args) {
+			return make_shared<cadmium::web::atomic<ATOMIC, TIME, Args...>>(model_id, m_class, forward<Args>(args)...);
 		}
 
 		template<typename TIME>
-		shared_ptr<cadmium::web::coupled_web<TIME>> make_web_coupled_model(string id, string m_class, Models models, Ports i_ports, Ports o_ports, EICs eics, EOCs eocs, ICs ics) {
-		    return make_shared<cadmium::web::coupled_web<TIME>>(id, m_class, models, i_ports, o_ports, eics, eocs, ics);
+		shared_ptr<cadmium::web::coupled<TIME>> make_coupled_model(string id, string m_class, Models models, Ports i_ports, Ports o_ports, EICs eics, EOCs eocs, ICs ics) {
+		    return make_shared<cadmium::web::coupled<TIME>>(id, m_class, models, i_ports, o_ports, eics, eocs, ics);
 		}
 
 		template<typename TIME>
-		shared_ptr<cadmium::web::top_web<TIME>> make_web_top_model(string id, string m_class, Models models, Ports i_ports, Ports o_ports, EICs eics, EOCs eocs, ICs ics) {
+		shared_ptr<cadmium::web::top_web<TIME>> make_top_model(string id, string m_class, Models models, Ports i_ports, Ports o_ports, EICs eics, EOCs eocs, ICs ics) {
 			return make_shared<cadmium::web::top_web<TIME>>(id, m_class, models, i_ports, o_ports, eics, eocs, ics);
 		}
 
@@ -303,47 +301,9 @@ namespace cadmium {
         	return cadmium::dynamic::translate::make_IC<PORT_FROM, PORT_TO>(model_from, model_to);
         }
 
-
-        // *** iestream input reader model replacement *** //
-		template<typename MSG> struct iestream_input_defs{
-		    //custom ports
-		    struct out : public web::out_port<MSG> {};
-		};
-
-		template<typename MSG, typename TIME>
-		class iestream_input: public cadmium::basic_models::pdevs::iestream_input<MSG, TIME> {
-		    using defs=iestream_input_defs<MSG>;
-	        // default constructor
-			public:
-				iestream_input() noexcept {}
-				iestream_input(const char* file_path) noexcept : cadmium::basic_models::pdevs::iestream_input<MSG, TIME>(file_path)  {
-
-				}
-
-			    using output_ports=tuple<typename defs::out>;
-
-			    // output function
-			    typename make_message_bags<output_ports>::type output() const {
-			        typename make_message_bags<output_ports>::type bags;
-			        for(int i =0; i<this->state.next_input.size(); i++){
-			            cadmium::get_messages<typename defs::out>(bags).emplace_back(this->state.next_input[i]);
-			        }
-			        return bags;
-			    }
-
-	            friend ostringstream& operator<<(ostringstream& os, const typename iestream_input<MSG, TIME>::state_type& i) {
-	                os << i.next_time;
-	                return os;
-	            }
-
-	            message_type get_state_message_type() {
-	            	vector<string> fields({ "next_time" });
-	            	string description = "Next input time.";
-
-	            	return message_type("s_input_reader", fields, description);
-	            }
-		};
-
+		// *** RUNNER REPLACEMENT *** //
+		template<typename TIME, typename LOGGER>
+		using runner = dynamic::engine::runner<TIME, LOGGER>;
 	}
 }
 
