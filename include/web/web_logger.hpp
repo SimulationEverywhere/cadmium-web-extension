@@ -43,13 +43,13 @@ namespace cadmium {
 		struct formatter : cadmium::logger::formatter<TIME> {
 			static std::string sim_messages_collect(const TIME& t, const std::string& model_id, const std::string& outbox) {
 				std::ostringstream oss;
-				if (outbox.length() > 0) oss << model_id << ";" << outbox;
+				if (outbox.length() > 0) oss << model_id << "|" << outbox;
 				return oss.str();
 			};
 
 			static std::string sim_state(const TIME& t, const std::string& model_id, const std::string& model_state) {
 				std::ostringstream oss;
-				oss << model_id << ";" << model_state;
+				oss << model_id << "|" << model_state;
 				return oss.str();
 			};
 
@@ -91,11 +91,11 @@ namespace cadmium {
 				bag_type& casted_bag = boost::any_cast<bag_type&>(bags.at(typeid(port_type)));
 
 				if (casted_bag.messages.size() > 0) {
-					if (a != 0)  os << ";";
+					if (a != 0)  os << "|";
 
 					const char* name = boost::typeindex::type_id<port_type>().name();
 					std::string pretty = boost::core::demangle(name);
-					os << pretty.substr(pretty.find_last_of(':') + 1) << ";";
+					os << pretty.substr(pretty.find_last_of(':') + 1) << "|";
 
 					web::implode(os, casted_bag.messages);
 

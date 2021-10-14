@@ -52,21 +52,22 @@ namespace cadmium {
 			TIME t;
 
 			line_by_line(path, [&s, &msgs, &t] (auto &l) -> void {
-				vector<string> split = tools::split(l, ';');
+				vector<string> sp = tools::split(l, '|');
 
-				if (split.size() == 1) t = TIME(l);
+				// A time line is length 1. Any other would be odd length (model|port|message|port|message...).
+				if (sp.size() % 2 == 0) throw std::runtime_error( "Badly formed output message line. Split size is incorrect." );
 
-				else if (split.size() % 2 == 1) {
-					submodel* comp = s->get_component(split[0]);
-
-					for (int i = 1; i < split.size(); i = i + 2) {
-						port* port = s->get_port(split[0], split[i]);
-						msgs->add_output_message(t, comp, port, split[i + 1]);
-					}
-				}
+				else if (sp.size() == 1) t = TIME(l);
 
 				else {
-					throw std::runtime_error( "Badly formed output message line. Split size is incorrect." );
+					submodel* m = s->get_component(sp[0]);
+
+					for (int i = 1; i < sp.size(); i = i + 2) {
+						vector<string> sub = tools::split(sp[i + 1], ';');
+						port* p = s->get_port(sp[0], sp[i]);
+
+						for (int j = 0; j < sub.size(); j++) msgs->add_output_message(t, m, p, sub[j]);
+					}
 				}
 			});
 		}
@@ -77,7 +78,7 @@ namespace cadmium {
 
 			line_by_line(path, [&s, &msgs, &t] (auto &l) -> void {
 
-				vector<string> split = tools::split(l, ';');
+				vector<string> split = tools::split(l, '|');
 
 				if (split.size() == 1) t = TIME(l);
 
@@ -133,8 +134,8 @@ namespace cadmium {
 		}
 
 		template<typename TIME>
-        static structure make_structure(shared_ptr<web::coupled<TIME>> p_top) {
-        	structure s("GIS-DEVS", "Cadmium");
+        static structure make_structure(shared_ptr<web::coupled<TIME>> p_top, string formalism) {
+        	structure s(formalism, "Cadmium");
 
     		try {
     			traverse_model(&s, p_top.get(), [] (structure* s, web_extension* p_ext) -> void {
@@ -165,10 +166,10 @@ namespace cadmium {
     	}
 
 		template<typename TIME>
-        static void output_results(shared_ptr<web::coupled<TIME>> p_top, string path) {
+        static void output_results(shared_ptr<web::coupled<TIME>> p_top, string formalism, string path) {
 		    cadmium::web::output::messages<TIME> msgs;
 
-			web::output::structure s = make_structure(p_top);
+			web::output::structure s = make_structure(p_top, formalism);
 		    web::output_structure(&s, path);
 		    web::generate_output_messages(&s, &msgs, path + "output_messages.txt");
 		    web::generate_state_messages(&s, &msgs, path + "state_messages.txt");
