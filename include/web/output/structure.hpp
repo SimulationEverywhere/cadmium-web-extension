@@ -120,8 +120,11 @@ namespace cadmium {
 
 					submodel* add_component(web_extension* p_ext) {
 						model_type* mt = get_model_type(p_ext->get_class());
-						submodel* component = new submodel(p_ext->get_id(), mt->get_idx());
 
+						return add_component(new submodel(p_ext->get_id(), mt->get_idx()));
+					}
+
+					submodel* add_component(submodel* component) {
 						component->set_idx(get_components().size());
 						get_components().push_back(component);
 						get_components_index().insert({ component->get_model_id(), component });
@@ -202,12 +205,7 @@ namespace cadmium {
 						if (p_mt) return p_mt;
 
 						// Model type doesn't already exist, must be created from model extension
-						p_mt = new model_type(p_ext->get_class(), p_ext->get_type(), new metadata());
-
-						// Add built model to structure, set idx, etc.
-						p_mt->set_idx(get_model_types().size());
-						get_model_types().push_back(p_mt);
-						get_model_types_index().insert({ p_mt->get_name(), p_mt });
+						p_mt = add_model_type(new model_type(p_ext->get_class(), p_ext->get_type(), new metadata()));
 
 						// Atomic models have a state message type, it must be added to structure
 						// if it's not already there. Then it must be assigned to the model type.
@@ -219,6 +217,15 @@ namespace cadmium {
 
 						add_ports(p_mt, "input", p_ext->get_input_ports_message_types());
 						add_ports(p_mt, "output", p_ext->get_output_ports_message_types());
+
+						return p_mt;
+					}
+
+					model_type* add_model_type(model_type* p_mt) {
+						// Add built model to structure, set idx, etc.
+						p_mt->set_idx(get_model_types().size());
+						get_model_types().push_back(p_mt);
+						get_model_types_index().insert({ p_mt->get_name(), p_mt });
 
 						return p_mt;
 					}

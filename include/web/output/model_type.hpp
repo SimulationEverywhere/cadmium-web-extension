@@ -53,6 +53,7 @@ namespace cadmium {
 					vector<port*> _ports = vector<port*>();
 					vector<int_coupling*> _internal_couplings = vector<int_coupling*>();
 					vector<int> _components = vector<int>();
+					vector<int> _dim = vector<int>();
 
 					map<string, port*> _ports_index;
 
@@ -71,6 +72,13 @@ namespace cadmium {
 
 					metadata* get_metadata() { return _metadata; }
 					void set_metadata(metadata* value) { _metadata = value; }
+
+					vector<int> get_dim() { return _dim; }
+					void set_dim(vector<int> value) {
+						if (value.size() == 2) value.push_back(1);
+
+						_dim = value;
+					}
 
 					vector<port*> &get_ports() { return _ports; }
 
@@ -128,9 +136,11 @@ namespace cadmium {
 							{"ports", json::array()}
 						};
 
-						if (get_type() == "atomic" ) out["message_type"] = get_message_type()->get_idx();
+						if (get_dim().size() > 0) out["dim"] = get_dim();
 
-						else {
+						if (get_message_type() != NULL) out["message_type"] = get_message_type()->get_idx();
+
+						if (get_type() == "coupled") {
 							for (int_coupling* lnk : get_couplings()) out["couplings"].push_back(lnk->to_json());
 
 							for (int c_idx : get_components()) out["components"].push_back(c_idx);

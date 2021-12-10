@@ -68,11 +68,14 @@ namespace cadmium {
 				}
 
 				nlohmann::json to_json() {
-					return {
-						{"name", get_name()},
-						{"type", get_type()},
-						{"message_type", get_message_type_idx()}
-					};
+					json msg = {
+							{"name", get_name()},
+							{"type", get_type()}
+						};
+
+					if (get_message_type_idx() != -1) msg["message_type"] = get_message_type_idx();
+
+					return msg;
 				}
 			};
 		}

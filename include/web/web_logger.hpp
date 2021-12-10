@@ -32,6 +32,7 @@
 #include <fstream>
 #include <string>
 #include <vector>
+#include <NDTime.hpp>
 #include <cadmium/modeling/dynamic_message_bag.hpp>
 #include <cadmium/logger/logger.hpp>
 #include <cadmium/logger/common_loggers.hpp>
