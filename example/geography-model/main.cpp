@@ -28,8 +28,9 @@
 #include <fstream>
 #include <cadmium/modeling/dynamic_coupled.hpp>
 #include <cadmium/engine/pdevs_dynamic_runner.hpp>
-#include "model/sir_coupled.hpp"
-#include <web/web_results.hpp>
+#include <cadmium/logger/common_loggers.hpp>
+#include <web/web_irregular.hpp>
+#include "./model/geographical_coupled.hpp"
 
 using namespace std;
 using namespace cadmium;
@@ -38,13 +39,13 @@ using namespace cadmium::celldevs;
 using TIME = float;
 
 /*************** Loggers *******************/
-static ofstream out_messages("./simulation_results/1_1_spatial_sir_outputs.txt");
+static ofstream out_messages("../logs/geography_model_outputs.txt");
 struct oss_sink_messages{
     static ostream& sink(){
         return out_messages;
     }
 };
-static ofstream out_state("./simulation_results/1_1_spatial_sir_state.txt");
+static ofstream out_state("../logs/geography_model_state.txt");
 struct oss_sink_state{
     static ostream& sink(){
         return out_state;
@@ -66,20 +67,39 @@ int main(int argc, char ** argv) {
         return -1;
     }
 
-    sirds_coupled<TIME> test = sirds_coupled<TIME>("sir");
-    std::string scenario_config_file_path = argv[1];
-    test.add_lattice_json(scenario_config_file_path);
-    test.couple_cells();
+        
+        // The C++ standard filesystem library is not used as it may require an additional linker flag (-std=c++17),
+        // but more importantly that in certain versions of GCC the filesystem is contained in an experimental folder (GCC 7).
+        // Newer versions of GCC doesn't have this problem (apparently GCC 8+ ?). As a result, depending on the version of GCC
+        // used different code is required, so an older version of code to try to open a file is used.
 
-    std::shared_ptr<cadmium::dynamic::modeling::coupled<TIME>> t = std::make_shared<sirds_coupled<TIME>>(test);
+        // A check to see if the file exists / can be accessed because the error message the JSON library gives if the
+        // file does not exist is not informative (at the time of this writing).
+        std::ifstream file_existence_checker{argv[1]};
 
-    cadmium::dynamic::engine::runner<TIME, logger_top> r(t, {0});
-    float sim_time = (argc > 2)? atof(argv[2]) : 25;
-    r.run_until(sim_time);
+        if(!file_existence_checker.is_open()) {
+            throw std::runtime_error{"Unable to open the file: " + std::string{argv[1]}};
+        }
 
-    std::vector<std::string>fields = { "population", "susceptible", "infected","recovered" };
+        // Note: At the time of this writing, the web viewer that consumes the log files of this simulator relies on the
+        // the input to geographical_coupled parameter (param name: id) to be empty; this changes how the IDs of cells
+        // in the log files are printed.
+        geographical_coupled<TIME> test = geographical_coupled<TIME>("geo_model");
+        std::string scenario_config_file_path = argv[1];
+        test.add_cells_json(scenario_config_file_path);
+        test.couple_cells();
 
-    web::convert_cell_devs(fields, scenario_config_file_path, "./simulation_results/1_1_spatial_sir_state.txt", "./simulation_results/");
+        std::shared_ptr<cadmium::dynamic::modeling::coupled < TIME>>
+        t = std::make_shared<geographical_coupled<TIME>>(test);
+
+        cadmium::dynamic::engine::runner <TIME, logger_top> r(t, {0});
+        float sim_time = (argc > 2) ? atof(argv[2]) : 500;
+        r.run_until(sim_time);
+
+        std::vector<std::string> fields = { "field_1", "field_2", "field_3", "field_4", "field_5", "field_6", "field_7" };
+
+        web::convert_irregular("geo_model", fields, argv[1], "./logs/geography_model_state.txt", "./results/");
+
 
     return 0;
 }
